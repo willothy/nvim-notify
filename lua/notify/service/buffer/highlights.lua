@@ -29,6 +29,17 @@ local function get_hl(name)
   return definition
 end
 
+ function getContrastYIQ(hexcolor)
+	local r = tonumber(hexcolor:sub(2, 3), 16)
+	local g = tonumber(hexcolor:sub(4, 5), 16)
+	local b = tonumber(hexcolor:sub(6, 7), 16)
+  if not r or not g or not b then
+    return "#0f0f0f"
+  end
+	local yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000
+	return (yiq >= 128) and '#0f0f0f' or '#fefefe'
+end
+
 function NotifyBufHighlights:new(level, buffer, config)
   local function linked_group(section)
     local orig = "Notify" .. level .. section
@@ -37,7 +48,16 @@ function NotifyBufHighlights:new(level, buffer, config)
     end
     local new = orig .. buffer
 
-    vim.api.nvim_set_hl(0, new, { link = orig })
+    local border = vim.api.nvim_get_hl(0, { name = "Notify" .. level .. "Border" })
+    orig = vim.api.nvim_get_hl(0, { name = orig, link=false })
+    vim.api.nvim_set_hl(0, new, vim.tbl_deep_extend(
+      "force",
+      orig,
+      {
+        bg = border.fg,
+        fg = border.bg and getContrastYIQ(border.bg) or "#000000"
+      }
+    ))
 
     return new, get_hl(new)
   end
